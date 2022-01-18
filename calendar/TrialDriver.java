@@ -51,6 +51,8 @@ public class TrialDriver extends Application{
 		
 		shoppingListText.setPrefWidth(300);
 		shoppingListText.setPrefHeight(500);
+		shoppingListText.setPromptText("No Dates Selected");
+		shoppingListText.setWrapText(true);
 		DWM.getChildren().addAll(rbDay,rbWeek,rbMonth);
 		vbShoppingList.getChildren().addAll(title,DWM,dateRange,shoppingListText);
 		Scene shoppingListScene = new Scene(vbShoppingList);
@@ -105,6 +107,9 @@ public class TrialDriver extends Application{
 		
 		btAddRecipe.setOnAction(e -> {
 			System.out.println("no functionality yet");
+//			System.out.println(list);
+			if(list.get(20).getDay()!=null)
+				System.out.println(new ShoppingList(list.get(20).getDay()).toString());
 		});
 		
 		rbDay.setOnAction(e ->{
@@ -144,6 +149,50 @@ public class TrialDriver extends Application{
 		rbMonth.setOnAction(e -> {
 			dateRange.getItems().clear();
 			dateRange.getItems().add("Current Month");
+		});
+		
+		dateRange.setOnAction(e ->{
+			
+			//Add support for the week
+			//add support for the month
+			//fix the day so it gets the right # (avoids nulls) no matter the month
+			//take care of the nulls if it is operated before meal generation.
+			
+			
+			if(null == dateRange.getValue()) {
+				shoppingListText.setText("No Dates Selected");
+			}else {
+				String str="";
+				if(rbDay.isSelected()){	
+					str="Day: "+dateRange.getValue()+"\n";
+					ShoppingList sl = new ShoppingList(list.get(Integer.valueOf(dateRange.getValue())+5).getDay());//the 5 has to go
+					str+="\n"+sl.toString();
+					
+				}else if(rbWeek.isSelected()){
+					//create a week object from the list ([?].getDay)
+						//get the starting date from the combo box
+						//figure out what day of the week that day is (only important for first week)
+							//this avoids the nulls at the beginning
+						//add those 2 numbers together and use that as the index for your first day
+						//use a for loop to create a day array
+						//create a week object with that array
+					//create a new shopping list from that week object.
+					//use the ShoppinglIst.toString() to put all the ingredients in the pane
+					
+					
+					str="Week: "+dateRange.getValue()+"\n";
+					String[] range = dateRange.getValue().split(" ");
+					int start = Integer.parseInt(range[0]);
+					Day[] arr = {new Day()};
+//					ShoppingList sl = new ShoppingList(new Week());
+//					str+=sl.toString();
+					
+				}else if(rbMonth.isSelected()) {
+					str="Month:"+month+"\n";
+					str+="\nNot implemented yet";
+				}
+				shoppingListText.setText(str);
+			}
 		});
 		
 		//Pretty stuff
