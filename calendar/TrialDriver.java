@@ -12,17 +12,17 @@ import javafx.scene.text.*;
 import javafx.scene.control.*;
 
 public class TrialDriver extends Application{
-	String month;
-	int firstDay;
-	int daysInMonth;
-	boolean hasMeals;//to see if we had created meals yet.
+	static String month;//String value of the month.
+	static int firstDay;//1-7 first day of the month
+	static int daysInMonth;//number of days in the month
+	static boolean hasMeals;//to see if we had created meals yet. UNUSED
 	
 	public void start(Stage s) {
 		//Make stuff
 		
 		ArrayList<DayPane> list = new ArrayList<DayPane>();
 		Calendar calendar = new GregorianCalendar();
-//		calendar.set(Calendar.MONTH, 2);
+		calendar.set(Calendar.MONTH, 3);
 		String[] months = {"January","February","March","April","May","June",
 				"July","August","September","October","November","December"};
 		ArrayList<String> weeks = new ArrayList<String>();
@@ -30,6 +30,9 @@ public class TrialDriver extends Application{
 		String[] recipesList = {"Rec1","Rec2","Rec3","Rec4","Rec5","Rec6","Rec7","Rec8","Rec9"};//!!change if adding ability to add recipes!!
 		month = months[calendar.get(Calendar.MONTH)];
 		daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+		calendar.set(Calendar.DAY_OF_MONTH,	1);
+		firstDay = calendar.get(Calendar.DAY_OF_WEEK);
+
 		
 		BorderPane pane = new BorderPane();
 		GridPane gp = new GridPane();
@@ -107,9 +110,6 @@ public class TrialDriver extends Application{
 		
 		btAddRecipe.setOnAction(e -> {
 			System.out.println("no functionality yet");
-//			System.out.println(list);
-			if(list.get(20).getDay()!=null)
-				System.out.println(new ShoppingList(list.get(20).getDay()).toString());
 		});
 		
 		rbDay.setOnAction(e ->{
@@ -152,46 +152,66 @@ public class TrialDriver extends Application{
 		});
 		
 		dateRange.setOnAction(e ->{
-			
-			//Add support for the week
 			//add support for the month
-			//fix the day so it gets the right # (avoids nulls) no matter the month
-			//take care of the nulls if it is operated before meal generation.
-			
-			
-			if(null == dateRange.getValue()) {
-				shoppingListText.setText("No Dates Selected");
-			}else {
-				String str="";
-				if(rbDay.isSelected()){	
-					str="Day: "+dateRange.getValue()+"\n";
-					ShoppingList sl = new ShoppingList(list.get(Integer.valueOf(dateRange.getValue())+5).getDay());//the 5 has to go
-					str+="\n"+sl.toString();
-					
-				}else if(rbWeek.isSelected()){
-					//create a week object from the list ([?].getDay)
-						//get the starting date from the combo box
-						//figure out what day of the week that day is (only important for first week)
-							//this avoids the nulls at the beginning
-						//add those 2 numbers together and use that as the index for your first day
-						//use a for loop to create a day array
-						//create a week object with that array
-					//create a new shopping list from that week object.
-					//use the ShoppinglIst.toString() to put all the ingredients in the pane
-					
-					
-					str="Week: "+dateRange.getValue()+"\n";
-					String[] range = dateRange.getValue().split(" ");
-					int start = Integer.parseInt(range[0]);
-					Day[] arr = {new Day()};
-//					ShoppingList sl = new ShoppingList(new Week());
-//					str+=sl.toString();
-					
-				}else if(rbMonth.isSelected()) {
-					str="Month:"+month+"\n";
-					str+="\nNot implemented yet";
+
+			if(hasMeals) {
+				if(null == dateRange.getValue()) {
+					shoppingListText.setText("No Dates Selected");
 				}
-				shoppingListText.setText(str);
+				else {
+					String str="";
+					//list for each day
+					if(rbDay.isSelected()){	
+						str="Day: "+dateRange.getValue()+"\n";
+						int index = Integer.parseInt(dateRange.getValue())+firstDay-2;
+						str+= "\n"+new ShoppingList(list.get(index).getDay()).toString();
+					}
+					//list for each week
+					else if(rbWeek.isSelected()){
+						str="Week: "+dateRange.getValue()+"\n";
+						String[] range = dateRange.getValue().split(" ");
+						int start = Integer.parseInt(range[0]);
+						Day[] arr = new Day[7];
+						//first week of the month
+						if(start==1) {
+							Day[] arr2 = new Day[7-firstDay+start];
+							for(int i=0; i<arr2.length; i++) {
+								arr2[i]=list.get(i+firstDay-start).getDay();
+							}
+							str += new ShoppingList(arr2).toString();
+						}
+						//main body of the month
+						else if(start+6<daysInMonth){
+							for (int i=0; i<arr.length; i++) {
+								arr[i] = list.get(i+firstDay+start-2).getDay();
+							}
+							str += new Week(arr).getShoppingList();
+						}
+						//last Week of the month
+						else {
+							Day[] arr3 = new Day[daysInMonth-start+1];
+							for(int i=0; i<daysInMonth-start+1; i++) {
+								arr3[i] = list.get(i+firstDay+start-2).getDay();
+							}
+							str += new ShoppingList(arr3).toString();
+							
+						}
+					}
+					//list for the month
+					else if(rbMonth.isSelected()) {
+						str="Month: "+month+"\n\n";
+						Day[] monthArr = new Day[daysInMonth];
+						
+						for(int i=0; i<monthArr.length; i++) {
+							monthArr[i] = list.get(i+firstDay-1).getDay();
+						}
+						str+= new ShoppingList(monthArr).toString();
+					}
+					shoppingListText.setText(str);
+				}
+			}
+			else {
+				shoppingListText.setText("No Meals Generated\nClick \"Generate Random Calendar\"");
 			}
 		});
 		
@@ -246,10 +266,11 @@ public class TrialDriver extends Application{
 //	public static ArrayList<DayPane> generateCal(ArrayList<DayPane> list){
 	public static void generateCal(ArrayList<DayPane> list){
 		Calendar cal = new GregorianCalendar();
+		hasMeals = false;
 		
 		//add blank days at first of month
 		cal.set(Calendar.DATE, 1);
-//		cal.set(Calendar.MONTH,2);
+		cal.set(Calendar.MONTH,3);
 		for(int i=0; i<cal.get(Calendar.DAY_OF_WEEK)-1; i++) {
 			list.add(null);
 		}
@@ -280,10 +301,12 @@ public class TrialDriver extends Application{
 	public static void randomizeCal(ArrayList<DayPane> list) {
 		
 		try {
+			hasMeals = true;
 			File f = new File("Ingredients.txt");
 			int r,dateCheck=0,count = 0;
 			Random random = new Random();
 			Scanner input = new Scanner(f);
+			//get number of Lines in file
 			while(input.hasNextLine()) {
 				count++;
 				input.nextLine();
@@ -296,6 +319,8 @@ public class TrialDriver extends Application{
 				}
 				if(list.get(i)!=null) {
 					r = random.nextInt(count);
+					//make r not just random for the length of the whole thing, but of the size of the SelectedMeals list.
+					//then it chooses from there, and gets the Index of that in the 
 					list.set(i, new DayPane(r+1,f,i-dateCheck+1));
 				}
 			}
