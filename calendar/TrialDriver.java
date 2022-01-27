@@ -10,6 +10,7 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.scene.text.*;
 import javafx.scene.control.*;
+import javafx.scene.control.Alert.AlertType;
 
 public class TrialDriver extends Application{
 	static String month;//String value of the month.
@@ -22,12 +23,12 @@ public class TrialDriver extends Application{
 		
 		ArrayList<DayPane> list = new ArrayList<DayPane>();
 		Calendar calendar = new GregorianCalendar();
-		calendar.set(Calendar.MONTH, 3);
+//		calendar.set(Calendar.MONTH, 3);
 		String[] months = {"January","February","March","April","May","June",
 				"July","August","September","October","November","December"};
 		ArrayList<String> weeks = new ArrayList<String>();
 		ArrayList<String> days = new ArrayList<String>();
-		String[] recipesList = {"Rec1","Rec2","Rec3","Rec4","Rec5","Rec6","Rec7","Rec8","Rec9"};//!!change if adding ability to add recipes!!
+		ArrayList<Meal> meals = new ArrayList<Meal>();
 		month = months[calendar.get(Calendar.MONTH)];
 		daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
 		calendar.set(Calendar.DAY_OF_MONTH,	1);
@@ -35,35 +36,49 @@ public class TrialDriver extends Application{
 
 		
 		BorderPane pane = new BorderPane();
-		GridPane gp = new GridPane();
-		VBox side = new VBox();
+		GridPane calendarPane = new GridPane();
+		VBox mealSelect = new VBox();
+		ScrollPane rightSide = new ScrollPane();
 		HBox top = new HBox();
-		VBox vbShoppingList = new VBox();
+		VBox sListPane = new VBox();
 		HBox DWM = new HBox();
 		
-		Button btIngredients = new Button("View Ingredients Page");
-		Button btRandom = new Button("Generate Random Calendar");
-		Button btAddRecipe = new Button("Add New Recipes");
-		ListView<String> cbRecipes = new ListView<String>();
+		Button btShoppingList = new Button(" View Shopping List ");
+		Button btRandom = new Button(" Generate Random Calendar ");
+		Button btCheckAll = new Button(" Select All Meals ");
+		Button btCheckNone = new Button(" DeSelect All Meals ");
+		ArrayList<CheckBox> cbMeals = new ArrayList<CheckBox>();
+		Alert alert = new Alert(AlertType.ERROR, "Select at least 1 meal");
 		Text title = new Text("View your Shopping List for the day, week or month");
 		RadioButton rbDay = new RadioButton("Day");
 		RadioButton rbWeek = new RadioButton("Week");
 		RadioButton rbMonth = new RadioButton("Month");
 		ComboBox<String> dateRange = new ComboBox<String>();
-		TextArea shoppingListText = new TextArea();
+		TextArea sListText = new TextArea();
 		
-		shoppingListText.setPrefWidth(300);
-		shoppingListText.setPrefHeight(500);
-		shoppingListText.setPromptText("No Dates Selected");
-		shoppingListText.setWrapText(true);
+		sListText.setPrefWidth(350);
+		sListText.setPrefHeight(500);
+		sListText.setPromptText("No Dates Selected");
+		sListText.setWrapText(true);
+		sListText.setFont(new Font("Courier",12));
+		title.setFont(new Font(15));
+		
 		DWM.getChildren().addAll(rbDay,rbWeek,rbMonth);
-		vbShoppingList.getChildren().addAll(title,DWM,dateRange,shoppingListText);
-		Scene shoppingListScene = new Scene(vbShoppingList);
-		Stage shoppingListStage = new Stage();
-		shoppingListStage.setX(0);
-		shoppingListStage.setY(50);
-		shoppingListStage.setScene(shoppingListScene);
-		shoppingListStage.setTitle("Shopping List");
+		sListPane.getChildren().addAll(title,DWM,dateRange,sListText);
+		
+		Scene sListScene = new Scene(sListPane);
+		Stage sListStage = new Stage();
+		sListStage.setX(0);
+		sListStage.setY(50);
+		sListStage.setScene(sListScene);
+		sListStage.setTitle("Shopping List");
+		
+		TextArea taNew = new TextArea("This is some text");
+		Pane p = new Pane(taNew);
+		Scene addNew = new Scene(p);
+		Stage addNewStage = new Stage();
+		addNewStage.setScene(addNew);
+		
 		//Advanced make stuff
 		
 		ToggleGroup tgDWM = new ToggleGroup();
@@ -75,41 +90,64 @@ public class TrialDriver extends Application{
 		
 		//generate the meal calendar
 		generateCal(list);
-		
+		//generate list of meals
+		generateMeals(meals);
+		//generate Check Boxes for meals
+		for(int i=0; i<meals.size(); i++) {
+			cbMeals.add(new CheckBox(meals.get(i).getName()));
+			cbMeals.get(i).setSelected(true);
+		}
 		
 		
 		//add all days to the Grid Pane
 		for(int i=0; i<6; i++) {
 			for (int j=0; j<7; j++) {
 				if(null!=list.get((i*7)+j) && ((i*7)+j)<list.size()){
-					gp.add(list.get((i*7)+j), j, i);
+					calendarPane.add(list.get((i*7)+j), j, i);
 				}
 			}
 		}
 		
 		
 		//Do Stuff
-		
+		//show shopping list
+		btShoppingList.setOnAction(e -> {
+			sListStage.show();
+		});
+				
 		btRandom.setOnAction(e->{
 //			gp.getChildren().removeAll(list);
-			randomizeCal(list);
+			randomizeCal(list, cbMeals);
+			boolean isSelected=false;
+			for(CheckBox i:cbMeals) {
+				if(i.isSelected()) {
+					isSelected = true;
+				}
+			}
+			calendarPane.getChildren().clear();
 			//add all days to the grid pane
+			if(!isSelected) {
+				alert.showAndWait();
+			}
 			for(int i=0; i<6; i++) {
 				for (int j=0; j<7; j++) {
 					if(null!=list.get((i*7)+j) && ((i*7)+j)<list.size()){
-						gp.add(list.get((i*7)+j), j, i);
+						calendarPane.add(list.get((i*7)+j), j, i);
 					}
 				}
 			}
 		});
 		
-		//show shopping list
-		btIngredients.setOnAction(e -> {
-			shoppingListStage.show();
+		btCheckAll.setOnAction(e ->{
+			for (CheckBox i:cbMeals) {
+				i.setSelected(true);
+			}
 		});
 		
-		btAddRecipe.setOnAction(e -> {
-			System.out.println("no functionality yet");
+		btCheckNone.setOnAction(e -> {
+			for (CheckBox i:cbMeals) {
+				i.setSelected(false);
+			}
 		});
 		
 		rbDay.setOnAction(e ->{
@@ -156,7 +194,7 @@ public class TrialDriver extends Application{
 
 			if(hasMeals) {
 				if(null == dateRange.getValue()) {
-					shoppingListText.setText("No Dates Selected");
+					sListText.setText("No Dates Selected");
 				}
 				else {
 					String str="";
@@ -168,7 +206,7 @@ public class TrialDriver extends Application{
 					}
 					//list for each week
 					else if(rbWeek.isSelected()){
-						str="Week: "+dateRange.getValue()+"\n";
+						str="Week: "+dateRange.getValue()+"\n\n";
 						String[] range = dateRange.getValue().split(" ");
 						int start = Integer.parseInt(range[0]);
 						Day[] arr = new Day[7];
@@ -207,70 +245,102 @@ public class TrialDriver extends Application{
 						}
 						str+= new ShoppingList(monthArr).toString();
 					}
-					shoppingListText.setText(str);
+					sListText.setText(str);
 				}
 			}
 			else {
-				shoppingListText.setText("No Meals Generated\nClick \"Generate Random Calendar\"");
+				sListText.setText("No Meals Generated\nClick \"Generate Random Calendar\"");
 			}
 		});
 		
 		//Pretty stuff
 		
-		top.getChildren().addAll(btIngredients,btRandom,btAddRecipe);
+		top.getChildren().addAll(btShoppingList,btRandom);
 		top.setAlignment(Pos.CENTER);
-//		cbRecipes.getItems().addAll(recipesList);
-//		cbRecipes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-		side.getChildren().addAll(new Text("Select Recipes"), cbRecipes);
+		//fix meal select - right side
+//		mealSelect.getChildren().addAll(new Text("Select Meals"),btCheckAll,btCheckNone);
+//		for(CheckBox i:cbMeals ) {
+//			mealSelect.getChildren().add(i);
+//		}
+//		mealSelect.setContent(mealSelect);
 		
 		top.setPadding(new Insets(5,5,5,5)); 
 		top.setSpacing(5);
-		gp.setStyle("-fx-border-color: black");
-		gp.setGridLinesVisible(false);
-		gp.setHgap(3);
-		gp.setVgap(3);
-		gp.setPrefHeight(610);//610
-		gp.setPrefWidth(720);
-		gp.setPadding(new Insets(5,5,5,5));
-		side.setStyle("-fx-border-color: blue");
-		side.setPrefWidth(100);
-		side.setPrefHeight(500);
-		vbShoppingList.setAlignment(Pos.CENTER);
+		calendarPane.setStyle("-fx-border-color: black");
+		calendarPane.setGridLinesVisible(false);
+		calendarPane.setHgap(3);
+		calendarPane.setVgap(3);
+		calendarPane.setPrefHeight(610);//610
+		calendarPane.setPrefWidth(720);
+		calendarPane.setPadding(new Insets(5,5,5,5));
+		mealSelect.setStyle("-fx-border-color: blue");
+		mealSelect.setPadding(new Insets(5,5,5,5)); 
+		mealSelect.setSpacing(5);
+		mealSelect.setPrefWidth(200);
+		mealSelect.setPrefHeight(500);
+		sListPane.setAlignment(Pos.CENTER);
+		sListPane.setPadding(new Insets(5,5,5,5));
+		sListPane.setSpacing(5);
 		DWM.setAlignment(Pos.CENTER);
 		DWM.setSpacing(5);
-		shoppingListText.setEditable(false);
+		sListText.setEditable(false);
 		
 		
 		pane.setTop(top);
-		pane.setCenter(gp);
-		pane.setRight(side);
+		pane.setCenter(calendarPane);
+		pane.setRight(mealSelect);
 		pane.setPadding(new Insets(5,5,5,5));
-		gp.setStyle("-fx-background-color: black;");
+		calendarPane.setStyle("-fx-background-color: black;");
 		
 		dateRange.setPromptText("Select Date Range");
 		
 		Scene scene = new Scene(pane);
 		s.setScene(scene);
 		s.setTitle(month +" Meal Calendar");
-		s.setX(300);
+		s.setX(350);
 		s.setY(0);
 		s.show();
 	}
 	
 	
+	private void generateMeals(ArrayList<Meal> meals) {
+		try {
+			//instead of using meals, we could just directly get the string and set it to the CheckBox
+			//since we don't ever use the names of the strings again, just their indices.
+			int count =0;
+			File f = new File("Ingredients.txt");
+			Scanner scanner = new Scanner(f);
+			Scanner input = new Scanner(f);
+			
+			//get number of Lines in file
+			while(input.hasNextLine()) {
+				count++;
+				input.nextLine();
+			}
+			input.close();
+			
+			for(int i=0; i<count; i++) {
+				 meals.add(new Meal(scanner.nextLine()));
+			}
+			scanner.close();
+		}catch(Exception e) {
+			System.out.println("error in Meal Generation: "+e);
+		}
+	}
+
+
 	/**
 	 * Generate a months worth of DayPanes based on the current calendar month
 	 * @param list
 	 * @return
 	 */
-//	public static ArrayList<DayPane> generateCal(ArrayList<DayPane> list){
 	public static void generateCal(ArrayList<DayPane> list){
 		Calendar cal = new GregorianCalendar();
 		hasMeals = false;
 		
 		//add blank days at first of month
 		cal.set(Calendar.DATE, 1);
-		cal.set(Calendar.MONTH,3);
+//		cal.set(Calendar.MONTH,3);
 		for(int i=0; i<cal.get(Calendar.DAY_OF_WEEK)-1; i++) {
 			list.add(null);
 		}
@@ -286,6 +356,8 @@ public class TrialDriver extends Application{
 			list.add(null);
 		}
 		
+		
+		//un needed because it is taken care of in DayPane
 		for(int i=0; i<list.size(); i++) {
 			if(null!=list.get(i)) {
 				list.get(i).setPrefHeight(99);
@@ -298,35 +370,44 @@ public class TrialDriver extends Application{
 	 * Randomizes the meals in the 
 	 * @param list
 	 */
-	public static void randomizeCal(ArrayList<DayPane> list) {
+	public static void randomizeCal(ArrayList<DayPane> list, ArrayList<CheckBox> cbMeals) {
 		
 		try {
 			hasMeals = true;
 			File f = new File("Ingredients.txt");
-			int r,dateCheck=0,count = 0;
+			int r,dateCheck=0;
 			Random random = new Random();
 			Scanner input = new Scanner(f);
-			//get number of Lines in file
-			while(input.hasNextLine()) {
-				count++;
-				input.nextLine();
-			}
-			input.close();
-			
-			for(int i=0; i<list.size(); i++) {
-				if(list.get(i)==null) {
-					dateCheck++;
+			ArrayList<Integer> indices = new ArrayList<Integer>();
+			//get the indices of each selected meal from cbMeals
+			for( int i=0; i<cbMeals.size(); i++) {
+				if(cbMeals.get(i).isSelected()) {
+					indices.add(i+1);
 				}
-				if(list.get(i)!=null) {
-					r = random.nextInt(count);
-					//make r not just random for the length of the whole thing, but of the size of the SelectedMeals list.
-					//then it chooses from there, and gets the Index of that in the 
-					list.set(i, new DayPane(r+1,f,i-dateCheck+1));
+			}
+			//generate random meals from the selected meals
+			if(indices.size()<1) {
+				throw new IllegalArgumentException("Select at least 1 meal");
+			}else {
+				for(int i=0; i<list.size(); i++) {
+					if(list.get(i)==null) {
+						dateCheck++;
+					}
+					if(list.get(i)!=null) {
+						r = random.nextInt(indices.size());
+						list.set(i, new DayPane(indices.get(r),f,i-dateCheck+1));
+					}
 				}
 			}
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+		}catch(IllegalArgumentException e) {
+			System.out.println(e);
+		}
+		catch (Exception e) {
+			System.out.println(e);
+
 		}
 
 	}
